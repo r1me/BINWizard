@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Top = 0
   Caption = 'BIN Wizard'
   ClientHeight = 384
-  ClientWidth = 694
+  ClientWidth = 726
   Color = clBtnFace
   Constraints.MinHeight = 256
   Constraints.MinWidth = 710
@@ -20,9 +20,9 @@ object MainForm: TMainForm
   object lvFiles: TListView
     AlignWithMargins = True
     Left = 8
-    Top = 57
-    Width = 678
-    Height = 300
+    Top = 89
+    Width = 710
+    Height = 268
     Margins.Left = 8
     Margins.Top = 8
     Margins.Right = 8
@@ -39,7 +39,7 @@ object MainForm: TMainForm
       end
       item
         Caption = 'Size'
-        Width = 100
+        Width = 120
       end
       item
         Caption = 'Start'
@@ -49,42 +49,57 @@ object MainForm: TMainForm
         Caption = 'End'
         Width = 100
       end>
+    HideSelection = False
     OwnerData = True
     ReadOnly = True
     RowSelect = True
     TabOrder = 0
     ViewStyle = vsReport
     OnData = lvFilesData
-    ExplicitHeight = 398
   end
-  object Panel1: TPanel
+  object panTop: TPanel
     Left = 0
     Top = 0
-    Width = 694
-    Height = 49
+    Width = 726
+    Height = 81
     Align = alTop
-    Caption = 'Panel1'
+    Caption = 'panTop'
     ShowCaption = False
     TabOrder = 1
-    object Label1: TLabel
-      Left = 16
+    ExplicitWidth = 694
+    object labOutputSize: TLabel
+      Left = 104
       Top = 18
       Width = 60
       Height = 13
       Caption = 'Output Size:'
     end
+    object labMinInputSize: TLabel
+      Left = 304
+      Top = 18
+      Width = 72
+      Height = 13
+      Caption = 'Min. input size:'
+    end
+    object labFillByte: TLabel
+      Left = 455
+      Top = 18
+      Width = 41
+      Height = 13
+      Caption = 'Fill byte:'
+    end
     object btnAddFile: TButton
-      Left = 276
-      Top = 13
+      Left = 8
+      Top = 48
       Width = 75
       Height = 25
-      Caption = 'Add'
+      Caption = 'Add File'
       TabOrder = 0
       OnClick = btnAddFileClick
     end
     object btnMerge: TButton
-      Left = 611
-      Top = 13
+      Left = 348
+      Top = 48
       Width = 75
       Height = 25
       Caption = 'Merge!'
@@ -92,18 +107,18 @@ object MainForm: TMainForm
       OnClick = btnMergeClick
     end
     object btnRemoveFile: TButton
-      Left = 357
-      Top = 13
+      Left = 89
+      Top = 48
       Width = 75
       Height = 25
-      Caption = 'Remove'
+      Caption = 'Remove File'
       TabOrder = 2
       OnClick = btnRemoveFileClick
     end
     object cbOutputSize: TComboBox
-      Left = 90
+      Left = 170
       Top = 15
-      Width = 167
+      Width = 121
       Height = 21
       Style = csDropDownList
       ItemIndex = 3
@@ -120,8 +135,8 @@ object MainForm: TMainForm
         '512KB (27C040)')
     end
     object btnUp: TButton
-      Left = 438
-      Top = 13
+      Left = 170
+      Top = 48
       Width = 75
       Height = 25
       Caption = 'Move Up'
@@ -129,30 +144,75 @@ object MainForm: TMainForm
       OnClick = btnUpClick
     end
     object btnDown: TButton
-      Left = 519
-      Top = 13
+      Left = 251
+      Top = 48
       Width = 75
       Height = 25
       Caption = 'Move Down'
       TabOrder = 5
       OnClick = btnDownClick
     end
+    object btnNew: TButton
+      Left = 8
+      Top = 13
+      Width = 75
+      Height = 25
+      Caption = 'New'
+      TabOrder = 6
+      OnClick = btnNewClick
+    end
+    object cbMinInputSize: TComboBox
+      Left = 382
+      Top = 15
+      Width = 59
+      Height = 21
+      Style = csDropDownList
+      ItemIndex = 1
+      TabOrder = 7
+      Text = '8KB'
+      OnChange = cbMinInputSizeChange
+      Items.Strings = (
+        '4KB'
+        '8KB')
+    end
+    object cbFillByte: TComboBox
+      Left = 502
+      Top = 15
+      Width = 84
+      Height = 21
+      Style = csDropDownList
+      ItemIndex = 1
+      TabOrder = 8
+      Text = '255 ($FF)'
+      OnChange = cbFillByteChange
+      Items.Strings = (
+        '0'
+        '255 ($FF)')
+    end
   end
   object StatusBar: TStatusBar
     Left = 0
     Top = 365
-    Width = 694
+    Width = 726
     Height = 19
     Panels = <>
     SimplePanel = True
-    ExplicitTop = 463
+    ExplicitWidth = 694
   end
   object odBinFile: TFileOpenDialog
     FavoriteLinks = <>
     FileTypes = <
       item
+        DisplayName = 'Supported file formats'
+        FileMask = '*.bin; *.rom'
+      end
+      item
         DisplayName = 'BIN File'
         FileMask = '*.bin'
+      end
+      item
+        DisplayName = 'ROM File'
+        FileMask = '*.rom'
       end>
     Options = []
     Left = 216
@@ -165,6 +225,10 @@ object MainForm: TMainForm
       item
         DisplayName = 'BIN File'
         FileMask = '*.bin'
+      end
+      item
+        DisplayName = 'ROM File'
+        FileMask = '*.rom'
       end>
     Options = []
     Left = 296

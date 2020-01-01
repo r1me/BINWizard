@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls,
-  System.Generics.Collections, System.Math;
+  System.Generics.Collections, System.Math, System.UITypes;
 
 type
   TBinFile = class
@@ -19,19 +19,16 @@ type
   TBinFiles = class
   private
     FItems: TObjectList<TBinFile>;
-    FMaxSize: Integer;
     function GetFreeSpace: Integer;
-    function GetMaxSize: Integer;
-    procedure SetMaxSize(const Value: Integer);
   public
     property Items: TObjectList<TBinFile> read FItems write FItems;
     property FreeSpace: Integer read GetFreeSpace;
-    property MaxSize: Integer read GetMaxSize write SetMaxSize;
 
     function AddFile(AFilePath: String): Boolean;
     procedure RemoveFile(AIndex: Integer);
 
     procedure Merge(AOutputFileName: String);
+    procedure Clear;
 
     procedure UpdateBinAddresses;
 
@@ -42,17 +39,22 @@ type
 type
   TMainForm = class(TForm)
     cbOutputSize: TComboBox;
-    Label1: TLabel;
+    labOutputSize: TLabel;
     lvFiles: TListView;
     btnAddFile: TButton;
     btnRemoveFile: TButton;
     btnMerge: TButton;
-    Panel1: TPanel;
+    panTop: TPanel;
     odBinFile: TFileOpenDialog;
     StatusBar: TStatusBar;
     btnUp: TButton;
     btnDown: TButton;
     sdBinFile: TFileSaveDialog;
+    btnNew: TButton;
+    cbMinInputSize: TComboBox;
+    labMinInputSize: TLabel;
+    cbFillByte: TComboBox;
+    labFillByte: TLabel;
     procedure btnAddFileClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -62,6 +64,9 @@ type
     procedure btnUpClick(Sender: TObject);
     procedure btnDownClick(Sender: TObject);
     procedure btnMergeClick(Sender: TObject);
+    procedure btnNewClick(Sender: TObject);
+    procedure cbMinInputSizeChange(Sender: TObject);
+    procedure cbFillByteChange(Sender: TObject);
   private
     { Private declarations }
     FBinFiles: TBinFiles;
@@ -75,7 +80,21 @@ var
 
 implementation
 
+uses
+  BINWizard.Settings;
+
 {$R *.dfm}
+
+procedure TMainForm.FormCreate(Sender: TObject);
+begin
+  FBinFiles := TBinFiles.Create;
+  UpdateControls;
+end;
+
+procedure TMainForm.FormDestroy(Sender: TObject);
+begin
+  FBinFiles.Free;
+end;
 
 procedure TMainForm.btnAddFileClick(Sender: TObject);
 begin
@@ -89,15 +108,18 @@ begin
 end;
 
 procedure TMainForm.btnDownClick(Sender: TObject);
+var
+  currItemIndex: Integer;
 begin
-  if (lvFiles.ItemIndex < FBinFiles.Items.Count-1) and
-     (lvFiles.ItemIndex <> -1) then
+  currItemIndex := lvFiles.ItemIndex;
+  if (currItemIndex < FBinFiles.Items.Count-1) and
+     (currItemIndex <> -1) then
   begin
-    FBinFiles.Items.Move(lvFiles.ItemIndex, lvFiles.ItemIndex+1);
+    FBinFiles.Items.Move(currItemIndex, currItemIndex+1);
     FBinFiles.UpdateBinAddresses;
-    lvFiles.ItemIndex := -1;
+    UpdateControls;
+    lvFiles.ItemIndex := currItemIndex+1;
   end;
-  UpdateControls;
 end;
 
 procedure TMainForm.btnMergeClick(Sender: TObject);
@@ -106,47 +128,82 @@ begin
     FBinFiles.Merge(sdBinFile.FileName);
 end;
 
-procedure TMainForm.btnRemoveFileClick(Sender: TObject);
+procedure TMainForm.btnNewClick(Sender: TObject);
 begin
-  if lvFiles.ItemIndex <> -1 then
-    FBinFiles.RemoveFile(lvFiles.ItemIndex);
+  if lvFiles.Items.Count > 0 then
+    if MessageDlg('Do you want to create a new file?', mtConfirmation, [mbYes, mbNo], 0, mbNo) = mrNo then Exit;
+
+  FBinFiles.Clear;
   UpdateControls;
 end;
 
-procedure TMainForm.btnUpClick(Sender: TObject);
+procedure TMainForm.btnRemoveFileClick(Sender: TObject);
 begin
-  if lvFiles.ItemIndex > 0 then
+  if lvFiles.ItemIndex <> -1 then
   begin
-    FBinFiles.Items.Move(lvFiles.ItemIndex, lvFiles.ItemIndex-1);
-    FBinFiles.UpdateBinAddresses;
+    FBinFiles.RemoveFile(lvFiles.ItemIndex);
     lvFiles.ItemIndex := -1;
   end;
   UpdateControls;
 end;
 
+procedure TMainForm.btnUpClick(Sender: TObject);
+var
+  currItemIndex: Integer;
+begin
+  currItemIndex := lvFiles.ItemIndex;
+  if currItemIndex > 0 then
+  begin
+    FBinFiles.Items.Move(currItemIndex, currItemIndex-1);
+    FBinFiles.UpdateBinAddresses;
+    UpdateControls;
+    lvFiles.ItemIndex := currItemIndex-1;
+  end;
+end;
+
+procedure TMainForm.cbFillByteChange(Sender: TObject);
+begin
+  case cbFillByte.ItemIndex of
+    0: g_Settings.FillByte := 0;
+    1: g_Settings.FillByte := 255;
+    else
+      g_Settings.FillByte := 255;
+  end;
+end;
+
+procedure TMainForm.cbMinInputSizeChange(Sender: TObject);
+begin
+  case cbMinInputSize.ItemIndex of
+    0: g_Settings.MinInputBinSize := 4;
+    1: g_Settings.MinInputBinSize := 8;
+    else
+      g_Settings.MinInputBinSize := 8;
+  end;
+
+  UpdateControls;
+end;
+
 procedure TMainForm.cbOutputSizeChange(Sender: TObject);
 begin
-  FBinFiles.MaxSize := Round(Power(2, cbOutputSize.ItemIndex)) * 8 * 1024;
-  UpdateControls;
-end;
+  case cbOutputSize.ItemIndex of
+    0: g_Settings.OutputBinSize := 8;
+    1: g_Settings.OutputBinSize := 16;
+    2: g_Settings.OutputBinSize := 32;
+    3: g_Settings.OutputBinSize := 64;
+    4: g_Settings.OutputBinSize := 128;
+    5: g_Settings.OutputBinSize := 256;
+    6: g_Settings.OutputBinSize := 512;
+    else
+      g_Settings.OutputBinSize := 64;
+  end;
 
-procedure TMainForm.FormCreate(Sender: TObject);
-begin
-  FBinFiles := TBinFiles.Create;
-  FBinFiles.MaxSize := Round(Power(2, cbOutputSize.ItemIndex)) * 8 * 1024;
   UpdateControls;
-end;
-
-procedure TMainForm.FormDestroy(Sender: TObject);
-begin
-  FBinFiles.Free;
 end;
 
 procedure TMainForm.lvFilesData(Sender: TObject; Item: TListItem);
 var
   size: Integer;
   startAddr, endAddr: Integer;
-  hexSize: Byte;
 begin
   Item.Caption := (Item.Index+1).ToString;
   Item.SubItems.Add(FBinFiles.Items[Item.Index].Path);
@@ -155,17 +212,39 @@ begin
   startAddr := FBinFiles.Items[Item.Index].StartAddr;
   endAddr := FBinFiles.Items[Item.Index].EndAddr;
 
-  hexSize := 4;
-  if cbOutputSize.ItemIndex > 3 then
-    hexSize := 8;
-
-  Item.SubItems.Add(size.ToString + 'b ($'+IntToHex(size, hexSize)+')');
-  Item.SubItems.Add('$'+IntToHex(startAddr, hexSize));
-  Item.SubItems.Add('$'+IntToHex(endAddr-1, hexSize));
+  Item.SubItems.Add(size.ToString + 'b ($'+IntToHex(size, 5)+')');
+  Item.SubItems.Add('$'+IntToHex(startAddr, 5));
+  Item.SubItems.Add('$'+IntToHex(endAddr-1, 5));
 end;
 
 procedure TMainForm.UpdateControls;
 begin
+  case g_Settings.OutputBinSize of
+    8  : cbOutputSize.ItemIndex := 0;
+    16 : cbOutputSize.ItemIndex := 1;
+    32 : cbOutputSize.ItemIndex := 2;
+    64 : cbOutputSize.ItemIndex := 3;
+    128: cbOutputSize.ItemIndex := 4;
+    256: cbOutputSize.ItemIndex := 5;
+    512: cbOutputSize.ItemIndex := 6;
+    else
+      cbOutputSize.ItemIndex := 3;
+  end;
+
+  case g_Settings.MinInputBinSize of
+    4: cbMinInputSize.ItemIndex := 0;
+    8: cbMinInputSize.ItemIndex := 1;
+    else
+      cbMinInputSize.ItemIndex := 1;
+  end;
+
+  case g_Settings.FillByte of
+    0  : cbFillByte.ItemIndex := 0;
+    255: cbFillByte.ItemIndex := 1;
+    else
+      cbFillByte.ItemIndex := 1;
+  end;
+
   FBinFiles.UpdateBinAddresses;
   lvFiles.Items.Count := FBinFiles.Items.Count;
   lvFiles.Invalidate;
@@ -208,10 +287,14 @@ begin
   FItems.Remove(Fitems[AIndex]);
 end;
 
+procedure TBinFiles.Clear;
+begin
+  FItems.Clear;
+end;
+
 constructor TBinFiles.Create;
 begin
   FItems := TObjectList<TBinFile>.Create;
-  FMaxSize := 8 * 1024;
 end;
 
 destructor TBinFiles.Destroy;
@@ -230,14 +313,9 @@ begin
   for binFile in FItems do
     occupiedSpace := occupiedSpace + (binFile.EndAddr - binFile.StartAddr);
 
-  Result := FMaxSize - occupiedSpace;
+  Result := (g_Settings.OutputBinSize * 1024) - occupiedSpace;
   if Result < 0 then
     Result := 0;
-end;
-
-function TBinFiles.GetMaxSize: Integer;
-begin
-  Result := FMaxSize;
 end;
 
 procedure TBinFiles.Merge(AOutputFileName: String);
@@ -264,7 +342,7 @@ begin
         if fillSize > 0 then
         begin
           for i := 1 to fillSize do
-            ms.WriteData($ff, 1);
+            ms.WriteData(g_Settings.FillByte, 1);
         end;
       finally
          msInput.Free;
@@ -275,12 +353,6 @@ begin
   finally
     ms.Free;
   end;
-end;
-
-procedure TBinFiles.SetMaxSize(const Value: Integer);
-begin
-  FMaxSize := Value;
-  UpdateBinAddresses;
 end;
 
 procedure TBinFiles.UpdateBinAddresses;
@@ -297,11 +369,11 @@ begin
     binFile := Fitems[i];
 
     requiredBlocks := 1;
-    while (requiredBlocks * 8 * 1024) < binFile.Size do
+    while (requiredBlocks * g_Settings.MinInputBinSize * 1024) < binFile.Size do
       Inc(requiredBlocks);
 
     binFile.StartAddr := lastEndAddr;
-    binFile.EndAddr := lastEndAddr + (requiredBlocks * 8 * 1024);
+    binFile.EndAddr := lastEndAddr + (requiredBlocks * g_Settings.MinInputBinSize * 1024);
 
     lastEndAddr := binFile.EndAddr;
   end;

@@ -2,7 +2,8 @@ program BINWizard;
 
 uses
   Vcl.Forms,
-  BINWizard.MainForm in 'BINWizard.MainForm.pas' {MainForm};
+  BINWizard.MainForm in 'BINWizard.MainForm.pas' {MainForm},
+  BINWizard.Settings in 'BINWizard.Settings.pas';
 
 {$R *.res}
 
