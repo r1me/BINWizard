@@ -124,6 +124,7 @@ end;
 
 procedure TMainForm.btnMergeClick(Sender: TObject);
 begin
+  if (lvFiles.Items.Count = 0) then Exit;
   if sdBinFile.Execute then
     FBinFiles.Merge(sdBinFile.FileName);
 end;
@@ -142,6 +143,7 @@ begin
   if lvFiles.ItemIndex <> -1 then
   begin
     FBinFiles.RemoveFile(lvFiles.ItemIndex);
+    lvFiles.Items.Count := FBinFiles.Items.Count;
     lvFiles.ItemIndex := -1;
   end;
   UpdateControls;
